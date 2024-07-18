@@ -79,7 +79,7 @@ def add_bone(offset, parent_obj, name):
     base = mathutils.Vector((0., 0., 1.))
     target = offset.normalized()
     axis = base.cross(target)
-    theta = np.math.acos(base.dot(target))
+    theta = np.emath.arccos(base.dot(target))
     rot = mathutils.Quaternion(axis, theta)
 
     bpy.ops.mesh.primitive_cone_add(vertices=5, radius1=0.022 * global_scale, radius2=0.0132 * global_scale, depth=length, enter_editmode=False, location=center)
@@ -130,7 +130,7 @@ def set_animation(file, joints):
     bpy.context.scene.frame_start = 0
     bpy.context.scene.frame_end = file.anim.rotations.shape[0] - 1
 
-    bpy.context.scene.render.fps = 1 / file.frametime
+    bpy.context.scene.render.fps = int(1 / file.frametime)
 
     bpy.ops.object.select_all(action='DESELECT')
 

@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import argparse
 import os
+import platform
 
 
 def clean_scene():
@@ -18,6 +19,14 @@ def load_bvh(source):
     bpy.ops.import_anim.bvh(filepath=source)
     return source.split('/')[-1][:-4]
 
+def my_load_bvh(source):
+    bpy.ops.import_anim.bvh(filepath=source)
+
+    # Get the base name (file name with extension)
+    base_name = os.path.basename(source)
+    # Split the base name to remove the extension
+    file_name, _ = os.path.splitext(base_name)
+    return file_name
 
 def set_rest_pose_bvh(filename, source_arm):
     """
@@ -51,7 +60,7 @@ def extract_weight(me):
     vgrps = me.vertex_groups
 
     weight = np.zeros((len(verts), len(vgrps)))
-    mask = np.zeros(weight.shape, dtype=np.int)
+    mask = np.zeros(weight.shape, dtype=int)
     vgrp_label = vgrps.keys()
 
     for i, vert in enumerate(verts):
@@ -130,6 +139,8 @@ def adapt_weight(source_weight, source_label, source_arm, dest_arm):
 
 
 def main():
+    os_name = platform.system()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--fbx_file', type=str, required=True, help='path of skinned model fbx file')
     parser.add_argument('--bvh_file', type=str, required=True, help='path of animation bvh file')
@@ -149,9 +160,15 @@ def main():
     for obj in bpy.data.objects:
         if obj.type == 'MESH':
             meshes.append(obj)
-    
+
     bvh_file = set_rest_pose_bvh(args.bvh_file, source_arm)
-    bvh_name = load_bvh(bvh_file)
+
+    bvh_name = None
+    if os_name == 'Windows':
+        bvh_name = my_load_bvh(bvh_file)
+    else:
+        bvh_name = load_bvh(bvh_file)
+
     dest_arm = bpy.data.objects[bvh_name]
     dest_arm.scale = [0.01, 0.01, 0.01]  # scale the bvh to match the fbx
 
@@ -162,7 +179,10 @@ def main():
         set_modifier(me, dest_arm)
 
     source_arm.hide_viewport = True
-    os.system('rm %s' % bvh_file) # remove temporary file 
+    if os_name == 'Windows':
+        os.system('del %s' % bvh_file) # remove temporary file
+    else:
+        os.system('rm %s' % bvh_file) 
 
 
 if __name__ == "__main__":
